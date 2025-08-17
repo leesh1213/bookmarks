@@ -1,0 +1,19 @@
+{
+    "manifest_version": 3,
+    "name": "YouTube 북마크 확장",
+    "version": "1.0",
+    "permissions": ["storage", "scripting", "activeTab", "tabs"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["*://www.youtube.com/*"],
+        "js": ["content.js"]
+      }
+    ],
+    "action": {
+      "default_popup": "popup.html"
+    }
+  }
+  

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>북마크 목록</title>
+  <style>
+    body { font-family: sans-serif; padding: 10px; width: 300px; }
+    #bookmarks { max-height: 400px; overflow-y: auto; }
+    .bookmark-group { margin-bottom: 16px; border-bottom: 1px solid #ccc; padding-bottom: 6px; }
+    .title { font-weight: bold; margin-bottom: 4px; cursor: pointer; display: flex; justify-content: space-between; }
+    .bookmark-items { margin-left: 8px; margin-top: 4px; }
+    .bookmark-item { font-size: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .time { color: green; flex-grow: 1; }
+    button, label#importLabel { margin-top: 10px; display: inline-block; margin-left: 5px; cursor: pointer; padding: 4px 8px; background: #eee; border: 1px solid #ccc; border-radius: 4px; }
+    #import { display: none; }
+  </style>
+</head>
+<body>
+  <h3>📌 북마크 목록</h3>
+  <div id="bookmarks"></div>
+  <button id="export">📤 내보내기</button>
+  <label for="import" id="importLabel">📥 가져오기</label>
+  <!-- 새창에서 열기 버튼 추가 -->
+  <button id="openNew">🆕 새창에서 열기111</button>
+  <input type="file" id="import" accept=".json" />
+  <script src="popup.js"></script>
+</body>
+</html>

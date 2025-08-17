@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>북마크 전체</title>
+<style>
+  body { font-family: sans-serif; padding: 16px; }
+  .video-group { 
+    margin-bottom: 24px; 
+    border: 1px solid #ddd; 
+    border-radius: 8px; 
+    overflow: hidden; 
+  }
+  .video-header { 
+    background: #f0f0f0; 
+    padding: 12px 16px; 
+    font-weight: bold; 
+    border-bottom: 1px solid #ddd; 
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+  }
+  .video-header:hover {
+    background: #e8e8e0;
+  }
+  .video-content {
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    max-height: 1000px;
+    opacity: 1;
+    overflow: hidden;
+  }
+  .video-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+  .toggle-icon {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+  }
+  .toggle-icon.collapsed {
+    transform: rotate(-90deg);
+  }
+  .video-title { 
+    color: #1976d2; 
+    text-decoration: none; 
+    font-size: 16px; 
+  }
+  .video-title:hover { 
+    text-decoration: underline; 
+  }
+  table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin: 0; 
+    table-layout: fixed; /* 테이블 레이아웃을 고정 */
+  }
+  th, td { 
+    border: 1px solid #eee; 
+    padding: 8px 12px; 
+    vertical-align: middle; /* 모든 셀 수직 가운데 정렬 */
+  }
+  th { 
+    background: #f7f7f7; 
+    font-weight: 600; 
+    cursor: pointer;
+    text-align: center; /* 제목 셀 수평 가운데 정렬 */
+  }
+  /* 테이블 컬럼 너비 통일 */
+  .col-color { width: 50px; }
+  .col-added { width: 170px; }
+  .col-time { width: 80px; }
+  .col-note { width: 300px; }
+  .col-subtitle { width: auto; }
+  .col-delete { width: 70px; }
+  .col-screenshot { width: 90px; }
+  
+  .color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .note-input {
+    width: 100%;
+    border: 1px solid #ddd;
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-height: 20px;
+    line-height: 1.5;
+    outline: none;
+  }
+  .delete-btn {
+    background: #ff5722;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .delete-btn:hover {
+    background: #d84315;
+  }
+  .time-link {
+    color: #1976d2;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .time-link:hover {
+    text-decoration: underline;
+  }
+
+.tags-input {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  margin-left: auto; /* 이 부분을 수정하여 오른쪽으로 고정 */
+  min-width: 180px;
+  margin-right: 10px; /* 간격 추가 */
+}
+.controls-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.search-input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 300px;
+}
+.sort-btn, .toggle-btn {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  margin-left: 5px;
+}
+.sort-btn:hover, .toggle-btn:hover {
+  background-color: #e0e0e0;
+}
+.sort-icon {
+  margin-left: 5px;
+}
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+}
+.pagination-controls button {
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+.page-size-select {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* 태그 목록 스타일 추가 */
+#tagContainer {
+  margin-bottom: 15px;
+}
+.tag-btn {
+  background-color: #e8e8e8;
+  border: 1px solid #d8d8d8;
+  color: #333;
+  padding: 5px 10px;
+  margin: 3px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+.tag-btn:hover {
+  background-color: #d0d0d0;
+}
+.tag-btn.active {
+  background-color: #4CAF50;
+  color: white;
+  border-color: #45a049;
+}
+
+/* 스크린샷 이미지 스타일 */
+.screenshot-thumb {
+  width: 80px;
+  height: auto;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.screenshot-thumb:hover {
+  opacity: 0.8;
+}
+
+/* 모달 스타일 */
+.modal {
+  display: none; /* 숨김 */
+  position: fixed; /* 고정 위치 */
+  z-index: 1000; /* 가장 위에 표시 */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.9);
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  margin: auto;
+  display: block;
+  max-width: 90%;
+  max-height: 90%;
+}
+.close {
+  position: absolute;
+  top: 15px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+.close:hover,
+.close:focus {
+  color: #bbb;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+</style>
+</head>
+<body>
+  <h1>북마크 전체</h1>
+  <div id="tagContainer"></div>
+  <div class="controls-container">
+    <input type="text" id="searchInput" class="search-input" placeholder="제목, 태그, 메모, 자막 검색...">
+    <div style="display: flex;">
+      <button id="sortBtn" class="sort-btn">최신순 ▼</button>
+      <button id="toggleAllBtn" class="toggle-btn">전체 접기</button>
+    </div>
+  </div>
+  <div id="bookmarkContainer"></div>
+  <div id="globalPaginationControls" class="pagination-controls"></div>
+  
+  <div id="imageModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage">
+  </div>
+
+  <script src="bookmarks.js"></script>
+</body>
+</html>
