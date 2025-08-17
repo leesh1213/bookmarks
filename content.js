@@ -52,7 +52,7 @@
   if (player) {
     const rect = player.getBoundingClientRect();
 
-    // 가로 중앙, 세로 중앙보다 약간 위 (20% 위)
+    // 가로 중앙, 세로 중앙보다 약간 위 (20% 위) 
     const top = rect.top + rect.height * 0.4;  // 중앙보다 위
     const left = rect.left + rect.width / 2;
 
