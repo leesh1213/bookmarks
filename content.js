@@ -182,6 +182,21 @@
               }
             });
 
+
+           // 우클릭 → 삭제 확인 후 삭제
+           marker.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (confirm("이 북마크를 삭제하시겠습니까?")) {
+              chrome.runtime.sendMessage(
+                { action: 'deleteBookmark', videoId, id: bookmark.id },
+                () => {
+                  showToast("북마크 삭제됨");
+                  addBookmarkMarkers(); // 새로고침
+                }
+              );
+            }
+          });            
+
             timeline.appendChild(marker);
           });
         }
@@ -193,10 +208,13 @@
   // Key bindings: v (yellow), b (blue), n (purple), p (screenshot)
   document.addEventListener('keydown', (e) => {
     if (['INPUT','TEXTAREA'].includes((e.target.tagName||'').toUpperCase())) return;
-    if (e.key === 'v') addBookmark('yellow', '');
-    else if (e.key === 'b') addBookmark('blue', '');
-    else if (e.key === 'n') addBookmark('purple', '');
-    else if (e.key === 'p') {
+
+    const key = e.key.toLowerCase(); // 소문자로 변환
+
+    if (key === 'v') addBookmark('yellow', '');
+    else if (key === 'b') addBookmark('blue', '');
+    else if (key === 'n') addBookmark('purple', '');
+    else if (key === 'p') {
       const imageData = captureVideoScreenshot();
       if (imageData) {
           addBookmark('#D32F2F', '', imageData);

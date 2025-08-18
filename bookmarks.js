@@ -229,7 +229,7 @@ function renderBookmarks() {
     const headerRow = document.createElement('tr');
     
     const headers = [
-      { text: '색', key: null, class: 'col-color' },
+      { text: '유형컬러', key: null, class: 'col-color' },
       { text: '스크린샷', key: null, class: 'col-screenshot' }, // 스크린샷 헤더 추가
       { text: '추가시간', key: 'addedAt', class: 'col-added' },
       { text: '시간', key: 'time', class: 'col-time' },
@@ -444,6 +444,19 @@ function renderBookmarks() {
   paginationControls.appendChild(nextBtn);
 }
 
+/**
+ * Refreshes the bookmarks data and updates the UI.
+ *
+ * If running in a Chrome extension environment, requests all bookmarks from the background script
+ * and updates the local `bookmarksData` variable with the response. Otherwise, loads a set of
+ * sample bookmarks for testing purposes.
+ *
+ * After updating the bookmarks data, this function calls `renderTags()` to update the tag list
+ * and `renderBookmarks()` to display the bookmarks.
+ *
+ * @function
+ * @global
+ */
 function refresh() {
   if (typeof chrome !== 'undefined' && chrome.runtime) {
     chrome.runtime.sendMessage({ action: 'getAllBookmarks' }, (res) => {
