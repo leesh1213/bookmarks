@@ -54,6 +54,7 @@ function renderTags() {
   tagContainer.innerHTML = '';
   
   const allTags = new Set();
+  // 모든 북마크 데이터를 순회하며 태그를 수집합니다.
   bookmarksData.forEach(bm => {
     if (bm.tags) {
       bm.tags.forEach(tag => allTags.add(tag.trim()));
@@ -127,6 +128,7 @@ function renderBookmarks() {
       const videoId = bm.videoId;
       if (!groupedBookmarks[videoId]) {
         const title = bm.videoTitle || bm.title || `YouTube Video ${videoId}`;
+        // 비디오 그룹에 태그를 할당
         groupedBookmarks[videoId] = {
           videoId: videoId,
           title: title,
@@ -189,17 +191,25 @@ function renderBookmarks() {
     tagsInput.type = 'text';
     tagsInput.placeholder = '태그 입력 (쉼표 구분)';
     tagsInput.className = 'tags-input';
+    // 비디오 그룹의 tags 속성을 사용하도록 수정
     tagsInput.value = group.tags ? group.tags.join(', ') : '';
     
     // 태그 입력 완료시 (Enter) 또는 포커스 잃을 때 저장
     const saveTags = (inputElement) => {
+        // 비디오 ID에 해당하는 모든 북마크를 찾아 태그 업데이트
+        const newTags = inputElement.value.split(',').map(t => t.trim()).filter(Boolean);
+        const bookmarksToUpdate = bookmarksData.filter(bm => bm.videoId === group.videoId);
+
         if (typeof chrome !== 'undefined' && chrome.runtime) {
-            chrome.runtime.sendMessage({
-                action: 'updateBookmark',
-                // 모든 북마크에 태그를 적용하도록 수정
-                id: group.bookmarks[0].id, // 기존 로직 유지
-                patch: { tags: inputElement.value.split(',').map(t => t.trim()).filter(Boolean) }
-            }, refresh); // 태그 업데이트 후 refresh() 함수 호출
+            bookmarksToUpdate.forEach(bm => {
+                chrome.runtime.sendMessage({
+                    action: 'updateBookmark',
+                    id: bm.id,
+                    patch: { tags: newTags }
+                });
+            });
+            // 모든 메시지가 전송된 후 UI를 새로고침
+            refresh();
         }
     };
     tagsInput.addEventListener('change', () => saveTags(tagsInput));
@@ -271,8 +281,10 @@ function renderBookmarks() {
     table.appendChild(thead);
 
     const tbody = document.createElement('tbody');
+    
     group.bookmarks.forEach(bm => {
       const tr = document.createElement('tr');
+      tr.setAttribute('data-id', bm.id); // 북마크 ID를 HTML 요소에 저장
       
       const colorTd = document.createElement('td');
       colorTd.classList.add('col-color');
@@ -325,32 +337,28 @@ function renderBookmarks() {
       const noteInput = document.createElement('div');
       noteInput.className = 'note-input';
       noteInput.contentEditable = true; // div를 편집 가능하게 설정
-      // Newline characters (\n) are correctly converted to <br> tags for proper display
-      noteInput.innerHTML = bm.note ? bm.note.replace(/\n/g, '<br>') : '';
+      // HTML 콘텐츠를 사용하도록 변경
+      noteInput.innerHTML = bm.note || '';
       
       noteInput.addEventListener('input', () => {
-        const newNote = noteInput.innerText;
+        // 입력 시 바로 DB에 저장 (실시간 저장)
+        const newNoteHtml = noteInput.innerHTML;
         if (typeof chrome !== 'undefined' && chrome.runtime) {
           chrome.runtime.sendMessage({ 
             action: 'updateBookmark', 
             id: bm.id, 
-            patch: { note: newNote } 
+            patch: { note: newNoteHtml } 
           });
         }
       });
-      noteInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          noteInput.blur();
-        }
-      });
       noteInput.addEventListener('blur', () => {
-        const newNote = noteInput.innerText;
+        // 포커스 아웃 시에도 다시 한번 저장
+        const newNoteHtml = noteInput.innerHTML;
         if (typeof chrome !== 'undefined' && chrome.runtime) {
           chrome.runtime.sendMessage({ 
             action: 'updateBookmark', 
             id: bm.id, 
-            patch: { note: newNote } 
+            patch: { note: newNoteHtml } 
           });
         }
       });
@@ -359,7 +367,30 @@ function renderBookmarks() {
 
       const subsTd = document.createElement('td');
       subsTd.classList.add('col-subtitle');
-      subsTd.textContent = bm.subtitle || '';
+      // 자막 셀도 편집 가능하게 설정
+      subsTd.contentEditable = true;
+      // HTML 콘텐츠를 사용하도록 변경
+      subsTd.innerHTML = bm.subtitle || '';
+      subsTd.addEventListener('input', () => {
+        const newSubtitleHtml = subsTd.innerHTML;
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+          chrome.runtime.sendMessage({ 
+            action: 'updateBookmark', 
+            id: bm.id, 
+            patch: { subtitle: newSubtitleHtml } 
+          });
+        }
+      });
+      subsTd.addEventListener('blur', () => {
+        const newSubtitleHtml = subsTd.innerHTML;
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+          chrome.runtime.sendMessage({ 
+            action: 'updateBookmark', 
+            id: bm.id, 
+            patch: { subtitle: newSubtitleHtml } 
+          });
+        }
+      });
       tr.appendChild(subsTd);
 
       const delTd = document.createElement('td');
@@ -401,8 +432,6 @@ function renderBookmarks() {
   const paginationControls = document.getElementById('globalPaginationControls');
   paginationControls.innerHTML = '';
   
-  //const totalPages = Math.ceil(groupedVideoArray.length / globalPaginationState.pageSize);
-  
   const pageSizeSelect = document.createElement('select');
   pageSizeSelect.className = 'page-size-select';
   [5, 10, 20, 30].forEach(size => {
@@ -431,6 +460,7 @@ function renderBookmarks() {
   paginationControls.appendChild(prevBtn);
 
   const pageInfo = document.createElement('span');
+  //const totalPages = Math.ceil(groupedVideoArray.length / globalPaginationState.pageSize);
   pageInfo.textContent = ` ${globalPaginationState.currentPage} / ${totalPages} `;
   paginationControls.appendChild(pageInfo);
 
@@ -468,19 +498,19 @@ function refresh() {
   } else {
     bookmarksData = [
       { id: '1', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 43, timeLabel: '0:43', note: '테스트 메모1', subtitle: 'Never Gonna Give You Up', tags: ['music', 'rickroll'], color: '#ff5722', addedAt: Date.now() - 3600000 },
-      { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'lyrics'], color: '#2196f3', addedAt: Date.now() - 1800000 },
+      { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll'], color: '#2196f3', addedAt: Date.now() - 1800000 },
       { id: '3', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 60, timeLabel: '1:00', note: '메모3', subtitle: 'Third part of the video', tags: ['history', 'old'], color: '#4caf50', addedAt: Date.now() - 900000 },
-      { id: '4', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 180, timeLabel: '3:00', note: '메모4', subtitle: 'End of the song', tags: ['history', 'old'], color: '#9c27b0', addedAt: Date.now() - 600000 },
+      { id: '4', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 180, timeLabel: '3:00', note: '메모4', subtitle: 'End of the song', tags: ['history', 'old'], color: '#9c27b0', addedAt: Date.Now() - 600000 },
       { id: '5', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 240, timeLabel: '4:00', note: '메모5', subtitle: 'Last bookmark', tags: ['history', 'old'], color: '#009688', addedAt: Date.now() - 300000, imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }, // dummy image data
       { id: '6', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 300, timeLabel: '5:00', note: '메모6', subtitle: 'New bookmark', tags: ['history', 'old'], color: '#ffc107', addedAt: Date.now(), imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }, // dummy image data
-      { id: '7', videoId: 'jNQXAC9IVRw', videoTitle: 'Me at the zoo', time: 60, timeLabel: '1:00', note: '세번째 메모', subtitle: 'I have an elephant here', tags: ['history', 'old'], color: '#4caf50', addedAt: Date.now() - 900000 },
-      { id: '8', videoId: 'jNQXAC9IVRw', videoTitle: 'Me at the zoo', time: 90, timeLabel: '1:30', note: '다른 동물', subtitle: 'Another animal in the zoo', tags: ['history', 'old'], color: '#03a9f4', addedAt: Date.now() - 700000 },
+      { id: '7', videoId: 'jNQXAC9IVRw', videoTitle: 'Me at the zoo', time: 60, timeLabel: '1:00', note: '세번째 메모', subtitle: 'I have an elephant here', tags: ['zoo'], color: '#4caf50', addedAt: Date.now() - 900000 },
+      { id: '8', videoId: 'jNQXAC9IVRw', videoTitle: 'Me at the zoo', time: 90, timeLabel: '1:30', note: '다른 동물', subtitle: 'Another animal in the zoo', tags: ['zoo'], color: '#03a9f4', addedAt: Date.now() - 700000 },
       { id: '9', videoId: 'xyz123abc', videoTitle: 'Coding Tutorial', time: 150, timeLabel: '2:30', note: '중요한 코드', subtitle: 'This is a crucial part', tags: ['code', 'tutorial'], color: '#e91e63', addedAt: Date.now() - 1000000 },
       { id: '10', videoId: 'xyz123abc', videoTitle: 'Coding Tutorial', time: 300, timeLabel: '5:00', note: '마무리', subtitle: 'End of the lesson', tags: ['code', 'tutorial'], color: '#673ab7', addedAt: Date.now() - 500000 },
       { id: '11', videoId: 'pqr456def', videoTitle: 'Travel Vlog', time: 100, timeLabel: '1:40', note: '풍경이 멋짐', subtitle: 'Beautiful scenery', tags: ['travel', 'vlog'], color: '#ffeb3b', addedAt: Date.now() - 200000 },
       { id: '12', videoId: 'pqr456def', videoTitle: 'Travel Vlog', time: 200, timeLabel: '3:20', note: '다른 풍경', subtitle: 'Another scenery', tags: ['travel', 'vlog'], color: '#ffeb3b', addedAt: Date.now() - 150000 }
     ];
-    renderTags(); // 테스트 데이터로 태그 렌더링
+    renderTags(); // 태그 목록 렌더링
     renderBookmarks();
   }
 }
@@ -534,4 +564,102 @@ document.addEventListener('DOMContentLoaded', () => {
       modal.style.display = 'none';
     }
   };
+
+  // 텍스트 선택 시 메뉴 표시 및 기능
+  const textStyleMenu = document.getElementById('text-style-menu');
+  let selectedElement = null;
+
+  document.addEventListener('mouseup', (event) => {
+    const selection = window.getSelection();
+    // note-input 또는 col-subtitle 클래스를 가진 요소 안에서만 선택 메뉴를 표시
+    const targetElement = event.target.closest('.note-input, .col-subtitle');
+    if (selection.toString().length > 0 && targetElement) {
+      const range = selection.getRangeAt(0);
+      selectedElement = targetElement;
+      const rect = range.getBoundingClientRect();
+      textStyleMenu.style.display = 'block';
+      textStyleMenu.style.top = `${rect.top + window.scrollY - textStyleMenu.offsetHeight - 5}px`;
+      textStyleMenu.style.left = `${rect.left + window.scrollX + rect.width / 2 - textStyleMenu.offsetWidth / 2}px`;
+    } else {
+      // 선택 영역이 없거나 다른 곳을 클릭하면 메뉴 숨기기
+      if (!textStyleMenu.contains(event.target)) {
+        textStyleMenu.style.display = 'none';
+      }
+    }
+  });
+
+  function saveChanges(element) {
+    if (!element) return;
+    
+    const bookmarkId = element.closest('tr').dataset.id;
+    let patch = {};
+    if (element.classList.contains('note-input')) {
+        patch.note = element.innerHTML;
+    } else if (element.classList.contains('col-subtitle')) {
+        patch.subtitle = element.innerHTML;
+    }
+
+    if (Object.keys(patch).length > 0) {
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            chrome.runtime.sendMessage({
+                action: 'updateBookmark',
+                id: bookmarkId,
+                patch: patch
+            }, () => {
+              // 저장 후 선택 해제 및 메뉴 숨기기
+              window.getSelection().removeAllRanges();
+              textStyleMenu.style.display = 'none';
+            });
+        }
+    }
+  }
+
+  function applyStyle(style, value = null) {
+    if (selectedElement) {
+      // Get the current selection and its range
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      
+      // Ensure the selection is within the editable element
+      const container = range.commonAncestorContainer;
+      if (!container || !selectedElement.contains(container)) return;
+      
+      document.execCommand(style, false, value);
+      
+      // After applying style, save the changes
+      saveChanges(selectedElement);
+    }
+  }
+
+  document.getElementById('boldBtn').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    applyStyle('bold');
+  });
+
+  document.getElementById('italicBtn').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    applyStyle('italic');
+  });
+
+  document.getElementById('underlineBtn').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    applyStyle('underline');
+  });
+  
+  // 색상 버튼 클릭 이벤트 추가
+  document.querySelectorAll('#text-style-menu .color-btn').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const color = e.target.dataset.color;
+      applyStyle('foreColor', color);
+    });
+  });
+
+  // 스타일 취소 버튼 클릭 이벤트 추가
+  document.getElementById('removeStyleBtn').addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      // 'removeFormat' 명령어를 사용하여 모든 서식(굵게, 기울임, 색상 등)을 제거합니다.
+      applyStyle('removeFormat');
+  });
 });

@@ -85,6 +85,8 @@ async function dbAdd(data) {
   });
 }
 
+
+
 async function dbGetAll() {
   const db = await openDB();
   return new Promise((resolve, reject) => {

@@ -12,6 +12,7 @@
     return url.searchParams.get('v');
   }
 
+  
   function getCurrentTime() {
     const video = document.querySelector('video');
     return video ? Math.floor(video.currentTime) : 0;
