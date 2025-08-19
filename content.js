@@ -135,8 +135,7 @@
         addBookmarkMarkers();
     }
   }
-
-   //북마크 마커를 타임라인에 추가하는 함수
+//북마크 마커를 타임라인에 추가하는 함수
   function addBookmarkMarkers() {
     const videoId = getVideoId();
     if (!videoId) return;
@@ -201,10 +200,28 @@
             timeline.appendChild(marker);
           });
         }
+        
+        // **새로운 기능 추가:** 비디오 재생 중 북마크 지점 알림
+        let currentVideoBookmarks = res.data.map(b => b.time); // 북마크 시간만 배열에 저장
+        console.log(currentVideoBookmarks);
+        
+        // 중복 선언된 const video 제거
+        if (video) {
+            video.ontimeupdate = function() {
+                const currentTime = Math.floor(video.currentTime);
+                if (currentVideoBookmarks.includes(currentTime)) {
+                    const bookmark = res.data.find(b => b.time === currentTime);
+                    if (bookmark) {
+                        showToast(`북마크 지점: ${bookmark.note || bookmark.timeLabel}`);
+                        // 한 번만 표시되도록 배열에서 제거
+                        currentVideoBookmarks = currentVideoBookmarks.filter(t => t !== currentTime);
+                    }
+                }
+            };
+        }
       }
     });
   }
-
 
   // Key bindings: v (yellow), b (blue), n (purple), p (screenshot)
   document.addEventListener('keydown', (e) => {
