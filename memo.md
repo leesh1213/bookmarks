@@ -7,3 +7,5 @@ navigator.storage.estimate().then(estimate => {
   console.log(`총 할당량: ${(estimate.quota / 1024 / 1024).toFixed(2)} MB`);
 });
 ```
+
+memo commit test
