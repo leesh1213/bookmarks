@@ -254,14 +254,20 @@
                   if (bookmark) {
                     //showToast(`북마크 지점: ${bookmark.note || bookmark.timeLabel}`);
 
+                    // 토스트 메시지에 색상 표시 추가
                     showToast(
-                      `북마크 지점: ${
-                        bookmark.note
-                          ? `${bookmark.timeLabel || bookmark.time}<br><br>${
-                              bookmark.note
-                            }`
-                          : bookmark.timeLabel || bookmark.time
-                      }`
+                      `<div style="display: flex; align-items: center; justify-content: center;">
+                       <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${
+                         bookmark.color
+                       }; margin-right: 8px;"></span>
+                       <span>북마크 지점: ${
+                         bookmark.note
+                           ? `${bookmark.timeLabel || bookmark.time}<br><br>${
+                               bookmark.note
+                             }`
+                           : bookmark.timeLabel || bookmark.time
+                       }</span>
+                   </div>`
                     );
 
                     // 한 번만 표시되도록 배열에서 제거
@@ -277,7 +283,7 @@
     );
   }
 
- // Key bindings: v (yellow), b (blue), n (purple), p (screenshot)
+  // Key bindings: v (yellow), b (blue), n (purple), p (screenshot)
   document.addEventListener("keydown", (e) => {
     if (["INPUT", "TEXTAREA"].includes((e.target.tagName || "").toUpperCase()))
       return;
