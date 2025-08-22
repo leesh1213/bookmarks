@@ -277,7 +277,7 @@
     );
   }
 
-  // Key bindings: v (yellow), b (blue), n (purple), p (screenshot)
+ // Key bindings: v (yellow), b (blue), n (purple), p (screenshot)
   document.addEventListener("keydown", (e) => {
     if (["INPUT", "TEXTAREA"].includes((e.target.tagName || "").toUpperCase()))
       return;
@@ -286,8 +286,14 @@
 
     if (key === "v") addBookmark("yellow", "");
     else if (key === "b") addBookmark("blue", "");
-    else if (key === "n") addBookmark("purple", "");
-    else if (key === "p") {
+    else if (key === "n") {
+      // 'n' 키를 눌렀을 때 메시지 입력창 띄우기
+      const note = prompt("북마크에 추가할 메모를 입력하세요:");
+      // 사용자가 메모를 입력하고 'OK'를 누른 경우에만 북마크를 추가
+      if (note !== null) {
+        addBookmark("purple", note);
+      }
+    } else if (key === "p") {
       const imageData = captureVideoScreenshot();
       if (imageData) {
         addBookmark("#D32F2F", "", imageData);
