@@ -362,6 +362,21 @@ function renderBookmarks() {
           });
         }
       });
+
+      //const noteInput = document.querySelector(".note-input");
+      noteInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          if (e.shiftKey) {
+            // Shift+Enter → 줄바꿈 허용
+            //document.execCommand("insertLineBreak");
+          } else {
+            // Enter → 입력 종료
+            e.preventDefault(); // 기본 줄바꿈 막기
+            noteInput.blur();   // 입력 종료 (포커스 아웃)
+            //console.log("입력 종료:", noteInput.innerText); // 입력된 값 활용
+          }
+        }
+      });
       noteTd.appendChild(noteInput);
       tr.appendChild(noteTd);
 
@@ -501,14 +516,7 @@ function refresh() {
       { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll'], color: '#2196f3', addedAt: Date.now() - 1800000 },
       { id: '3', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 60, timeLabel: '1:00', note: '메모3', subtitle: 'Third part of the video', tags: ['history', 'old'], color: '#4caf50', addedAt: Date.now() - 900000 },
       { id: '4', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 180, timeLabel: '3:00', note: '메모4', subtitle: 'End of the song', tags: ['history', 'old'], color: '#9c27b0', addedAt: Date.Now() - 600000 },
-      { id: '5', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 240, timeLabel: '4:00', note: '메모5', subtitle: 'Last bookmark', tags: ['history', 'old'], color: '#009688', addedAt: Date.now() - 300000, imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }, // dummy image data
-      { id: '6', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 300, timeLabel: '5:00', note: '메모6', subtitle: 'New bookmark', tags: ['history', 'old'], color: '#ffc107', addedAt: Date.now(), imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }, // dummy image data
-      { id: '7', videoId: 'jNQXAC9IVRw', videoTitle: 'Me at the zoo', time: 60, timeLabel: '1:00', note: '세번째 메모', subtitle: 'I have an elephant here', tags: ['zoo'], color: '#4caf50', addedAt: Date.now() - 900000 },
-      { id: '8', videoId: 'jNQXAC9IVRw', videoTitle: 'Me at the zoo', time: 90, timeLabel: '1:30', note: '다른 동물', subtitle: 'Another animal in the zoo', tags: ['zoo'], color: '#03a9f4', addedAt: Date.now() - 700000 },
-      { id: '9', videoId: 'xyz123abc', videoTitle: 'Coding Tutorial', time: 150, timeLabel: '2:30', note: '중요한 코드', subtitle: 'This is a crucial part', tags: ['code', 'tutorial'], color: '#e91e63', addedAt: Date.now() - 1000000 },
-      { id: '10', videoId: 'xyz123abc', videoTitle: 'Coding Tutorial', time: 300, timeLabel: '5:00', note: '마무리', subtitle: 'End of the lesson', tags: ['code', 'tutorial'], color: '#673ab7', addedAt: Date.now() - 500000 },
-      { id: '11', videoId: 'pqr456def', videoTitle: 'Travel Vlog', time: 100, timeLabel: '1:40', note: '풍경이 멋짐', subtitle: 'Beautiful scenery', tags: ['travel', 'vlog'], color: '#ffeb3b', addedAt: Date.now() - 200000 },
-      { id: '12', videoId: 'pqr456def', videoTitle: 'Travel Vlog', time: 200, timeLabel: '3:20', note: '다른 풍경', subtitle: 'Another scenery', tags: ['travel', 'vlog'], color: '#ffeb3b', addedAt: Date.now() - 150000 }
+      { id: '5', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 240, timeLabel: '4:00', note: '메모5', subtitle: 'Last bookmark', tags: ['history', 'old'], color: '#009688', addedAt: Date.now() - 300000, imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
     ];
     renderTags(); // 태그 목록 렌더링
     renderBookmarks();
@@ -623,7 +631,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Ensure the selection is within the editable element
       const container = range.commonAncestorContainer;
-      if (!container || !selectedElement.contains(container)) return;
+
+      //if (!container || !selectedElement.contains(container)) return;
+      
       
       document.execCommand(style, false, value);
       
