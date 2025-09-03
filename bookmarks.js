@@ -109,8 +109,9 @@ function renderBookmarks() {
     const note = (bm.note || '').toLowerCase();
     const subtitle = (bm.subtitle || '').toLowerCase();
     const tags = (bm.tags || []).map(t => t.toLowerCase());
+    const attachmentText = (bm.attachments && bm.attachments.length > 0 ? '첨부파일' : '').toLowerCase(); // Added for attachment search
 
-    const isMatchQuery = query === '' || videoTitle.includes(query) || note.includes(query) || tags.includes(query) || subtitle.includes(query);
+    const isMatchQuery = query === '' || videoTitle.includes(query) || note.includes(query) || tags.includes(query) || subtitle.includes(query) || attachmentText.includes(query);
     const isMatchTag = currentTagFilter === null || tags.includes(currentTagFilter.toLowerCase());
 
     return isMatchQuery && isMatchTag;
@@ -244,6 +245,7 @@ function renderBookmarks() {
       { text: '추가시간', key: 'addedAt', class: 'col-added' },
       { text: '시간', key: 'time', class: 'col-time' },
       { text: '메모', key: 'note', class: 'col-note' },
+      { text: '첨부파일', key: null, class: 'col-attachment' }, // 첨부파일 헤더 추가
       { text: '자막', key: 'subtitle', class: 'col-subtitle' },
       { text: '삭제', key: null, class: 'col-delete' }
     ];
@@ -380,6 +382,92 @@ function renderBookmarks() {
       noteTd.appendChild(noteInput);
       tr.appendChild(noteTd);
 
+      // 첨부파일 셀 추가
+      const attachmentTd = document.createElement('td');
+      attachmentTd.classList.add('col-attachment');
+
+      const attachmentsContainer = document.createElement('div');
+      attachmentsContainer.classList.add('attachments-container');
+
+      // 여러 첨부파일 렌더링
+      const attachments = bm.attachments || [];
+      if (attachments.length > 0) {
+          attachments.forEach((att, index) => {
+              const attachmentWrapper = document.createElement('div');
+              attachmentWrapper.classList.add('attachment-wrapper');
+              
+              const attachmentImg = document.createElement('img');
+              attachmentImg.className = 'attachment-thumb';
+              attachmentImg.src = att;
+              attachmentImg.alt = '첨부파일';
+              attachmentImg.addEventListener('click', () => {
+                  const modal = document.getElementById('imageModal');
+                  const modalImg = document.getElementById('modalImage');
+                  modal.style.display = 'flex';
+                  modalImg.src = att;
+              });
+              attachmentWrapper.appendChild(attachmentImg);
+
+              const deleteAttachmentBtn = document.createElement('button');
+              deleteAttachmentBtn.className = 'delete-attachment-btn';
+              deleteAttachmentBtn.textContent = 'x';
+              deleteAttachmentBtn.title = '첨부파일 삭제';
+              deleteAttachmentBtn.addEventListener('click', () => {
+                  // 특정 인덱스의 첨부파일 삭제
+                  const newAttachments = [...attachments];
+                  newAttachments.splice(index, 1);
+                  if (typeof chrome !== 'undefined' && chrome.runtime) {
+                      chrome.runtime.sendMessage({
+                          action: 'updateBookmark',
+                          id: bm.id,
+                          patch: { attachments: newAttachments }
+                      }, refresh);
+                  }
+              });
+              attachmentWrapper.appendChild(deleteAttachmentBtn);
+              attachmentsContainer.appendChild(attachmentWrapper);
+          });
+      } else {
+          const placeholder = document.createElement('span');
+          placeholder.textContent = '📎';
+          attachmentsContainer.appendChild(placeholder);
+      }
+      
+      attachmentTd.appendChild(attachmentsContainer);
+      
+      // 붙여넣기 이벤트 리스너 추가
+      attachmentTd.contentEditable = true;
+      attachmentTd.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+          let hasImage = false;
+          for (const item of items) {
+              if (item.type.indexOf('image') === 0) {
+                  hasImage = true;
+                  const blob = item.getAsFile();
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                      const base64Image = event.target.result;
+                      const newAttachments = [...(bm.attachments || []), base64Image];
+                      if (typeof chrome !== 'undefined' && chrome.runtime) {
+                          chrome.runtime.sendMessage({
+                              action: 'updateBookmark',
+                              id: bm.id,
+                              patch: { attachments: newAttachments }
+                          }, refresh);
+                      }
+                  };
+                  reader.readAsDataURL(blob);
+                  break;
+              }
+          }
+          if (!hasImage) {
+              alert('이미지를 클립보드에 복사한 후 붙여넣어 주세요.');
+          }
+      });
+      tr.appendChild(attachmentTd);
+
+
       const subsTd = document.createElement('td');
       subsTd.classList.add('col-subtitle');
       // 자막 셀도 편집 가능하게 설정
@@ -512,8 +600,8 @@ function refresh() {
     });
   } else {
     bookmarksData = [
-      { id: '1', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 43, timeLabel: '0:43', note: '테스트 메모1', subtitle: 'Never Gonna Give You Up', tags: ['music', 'rickroll'], color: '#ff5722', addedAt: Date.now() - 3600000 },
-      { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll'], color: '#2196f3', addedAt: Date.now() - 1800000 },
+      { id: '1', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 43, timeLabel: '0:43', note: '테스트 메모1', subtitle: 'Never Gonna Give You Up', tags: ['music', 'rickroll'], color: '#ff5722', addedAt: Date.now() - 3600000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=']},
+      { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll'], color: '#2196f3', addedAt: Date.now() - 1800000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=']},
       { id: '3', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 60, timeLabel: '1:00', note: '메모3', subtitle: 'Third part of the video', tags: ['history', 'old'], color: '#4caf50', addedAt: Date.now() - 900000 },
       { id: '4', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 180, timeLabel: '3:00', note: '메모4', subtitle: 'End of the song', tags: ['history', 'old'], color: '#9c27b0', addedAt: Date.Now() - 600000 },
       { id: '5', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 240, timeLabel: '4:00', note: '메모5', subtitle: 'Last bookmark', tags: ['history', 'old'], color: '#009688', addedAt: Date.now() - 300000, imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }

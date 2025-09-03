@@ -168,7 +168,8 @@
   .col-added { width: 15%; }
   .col-time { width: 5%; }
   .col-note { width: 30%; }
-  .col-subtitle { width: 35%; }
+  .col-attachment { width: 10%; position: relative; } /* 첨부파일 열 스타일 */
+  .col-subtitle { width: 25%; }
   .col-delete { width: 5%; }
   .col-color { width: 5%; }
   .col-screenshot { width: 5%; }
@@ -212,8 +213,19 @@
     border-color: #ccc;
     background-color: #fafafa;
   }
+  /* 첨부파일 컨테이너 */
+  .attachments-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px; /* 이미지 간 간격 */
+      align-items: center;
+      min-height: 30px;
+  }
+  .attachment-wrapper {
+      position: relative;
+  }
   /* 스크린샷 이미지 스타일 */
-  .screenshot-thumb {
+  .screenshot-thumb, .attachment-thumb {
     width: 80px;
     height: auto;
     cursor: pointer;
@@ -221,9 +233,29 @@
     border-radius: 8px;
     transition: transform 0.2s, box-shadow 0.2s;
   }
-  .screenshot-thumb:hover {
+  .screenshot-thumb:hover, .attachment-thumb:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  .delete-attachment-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .delete-attachment-btn:hover {
+    background-color: red;
   }
   /* 모달 스타일 */
   .modal {
@@ -345,8 +377,7 @@
       <input type="text" id="searchInput" placeholder="검색어를 입력하세요..." />
     </div>
     <div class="tag-container" id="tagContainer">
-      <!-- 태그 버튼들이 여기에 렌더링됩니다 -->
-    </div>
+      </div>
     <div class="action-buttons">
       <button id="sortBtn">최신순 ▼</button>
       <button id="toggleAllBtn">전체 접기</button>
@@ -354,12 +385,10 @@
   </div>
 
   <div id="bookmarkContainer">
-    <!-- 북마크 그룹들이 여기에 렌더링됩니다 -->
-  </div>
+    </div>
   
   <div id="globalPaginationControls">
-    <!-- 페이지네이션 컨트롤이 여기에 렌더링됩니다 -->
-  </div>
+    </div>
 
   <div id="text-style-menu">
     <button class="text-style-btn" id="boldBtn" title="굵게"><b>B</b></button>
@@ -375,7 +404,6 @@
     <button class="text-style-btn" id="removeStyleBtn" title="스타일 취소"><b><i style="color: #ff6b6b; font-style: normal;">x</i></b></button>
   </div>
 
-  <!-- 이미지 모달 -->
   <div id="imageModal" class="modal">
     <span class="close">&times;</span>
     <img class="modal-content" id="modalImage">
