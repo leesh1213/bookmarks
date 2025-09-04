@@ -307,10 +307,10 @@ function renderBookmarks() {
         screenshotImg.src = bm.imageData;
         screenshotImg.alt = '스크린샷';
         screenshotImg.addEventListener('click', () => {
-          const modal = document.getElementById('imageModal');
-          const modalImg = document.getElementById('modalImage');
-          modal.style.display = 'flex';
-          modalImg.src = bm.imageData;
+          // 모달 열기 및 이미지 배열, 인덱스 설정
+          currentModalImages = [bm.imageData];
+          currentImageIndex = 0;
+          updateModalImage();
         });
         screenshotTd.appendChild(screenshotImg);
       }
@@ -437,16 +437,12 @@ function renderBookmarks() {
       
       attachmentTd.appendChild(attachmentsContainer);
       
-      // 붙여넣기 이벤트 리스너 추가
-      attachmentTd.contentEditable = true;
-      attachmentTd.addEventListener('paste', (e) => {
-          e.preventDefault();
-          const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      // 이미지 처리 함수 (붙여넣기 및 드래그앤드롭 공통)
+      const handleImage = (files) => {
           let hasImage = false;
-          for (const item of items) {
-              if (item.type.indexOf('image') === 0) {
+          for (const file of files) {
+              if (file.type.indexOf('image') === 0) {
                   hasImage = true;
-                  const blob = item.getAsFile();
                   const reader = new FileReader();
                   reader.onload = (event) => {
                       const base64Image = event.target.result;
@@ -459,14 +455,41 @@ function renderBookmarks() {
                           }, refresh);
                       }
                   };
-                  reader.readAsDataURL(blob);
-                  break;
+                  reader.readAsDataURL(file);
               }
           }
           if (!hasImage) {
-              alert('이미지를 클립보드에 복사한 후 붙여넣어 주세요.');
+              alert('이미지를 클립보드나 파일에서 가져와야 합니다.');
           }
+      };
+
+      // 붙여넣기 이벤트 리스너 추가
+      attachmentTd.contentEditable = true;
+      attachmentTd.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+          const files = [];
+          for (const item of items) {
+              if (item.kind === 'file') {
+                  files.push(item.getAsFile());
+              }
+          }
+          handleImage(files);
       });
+
+      // 드래그앤드롭 이벤트 리스너 추가
+      attachmentTd.addEventListener('dragover', (e) => {
+          e.preventDefault(); // 기본 동작(파일 열기) 방지
+          e.stopPropagation();
+      });
+
+      attachmentTd.addEventListener('drop', (e) => {
+          e.preventDefault(); // 기본 동작(파일 열기) 방지
+          e.stopPropagation();
+          const files = e.dataTransfer.files;
+          handleImage(files);
+      });
+
       tr.appendChild(attachmentTd);
 
 
@@ -520,11 +543,12 @@ function renderBookmarks() {
     content.appendChild(table);
     
     header.addEventListener('click', (e) => {
-      if (e.target === header || e.target === toggleIcon) {
-        content.classList.toggle('collapsed');
-        toggleIcon.classList.toggle('collapsed');
-        isAllCollapsed = false; // 개별 토글 시 전체 상태 해제
-        document.getElementById('toggleAllBtn').textContent = '전체 접기';
+      // 클릭된 요소가 A(링크)나 INPUT 태그가 아닐 경우에만 토글 기능을 실행합니다.
+      if (e.target.tagName !== 'A' && e.target.tagName !== 'INPUT') {
+          content.classList.toggle('collapsed');
+          toggleIcon.classList.toggle('collapsed');
+          isAllCollapsed = false; // 개별 토글 시 전체 상태 해제
+          document.getElementById('toggleAllBtn').textContent = '전체 접기';
       }
     });
 
@@ -602,7 +626,7 @@ function refresh() {
     });
   } else {
     bookmarksData = [
-      { id: '1', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 43, timeLabel: '0:43', note: '테스트 메모1', subtitle: 'Never Gonna Give You Up', tags: ['music', 'rickroll'], color: '#ff5722', addedAt: Date.now() - 3600000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQICAgICAgICAgICAwMDAwMDAwMDBAQEBAQEBAgEBBAQEBgYGBgYGBgUFBQUFBgYGBgYGBgYGBgYGBgYGBj/wAALCAABAAEBAREA/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/2gAIAQEAAD8Akwz8d4p0yK/3s0cAAAAASUVORK5CYII=']},
+      { id: '1', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 43, timeLabel: '0:43', note: '테스트 메모1', subtitle: 'Never Gonna Give You Up', tags: ['music', 'rickroll'], color: '#ff5722', addedAt: Date.now() - 3600000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQICAgICAgICAgICAwMDAwMDAwMDBAQEBAQEBAgEBBAQEBgYGBgYGBgUFBQUFBgYGBgYGBgYGBgYGBgYGBgYGBj/wAALCAABAAEBAREA/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/2gAIAQEAAD8Akwz8d4p0yK/3s0cAAAAASUVORK5CYII=']},
       { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll'], color: '#2196f3', addedAt: Date.now() - 1800000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=']},
       { id: '3', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 60, timeLabel: '1:00', note: '메모3', subtitle: 'Third part of the video', tags: ['history', 'old'], color: '#4caf50', addedAt: Date.now() - 900000 },
       { id: '4', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 180, timeLabel: '3:00', note: '메모4', subtitle: 'End of the song', tags: ['history', 'old'], color: '#9c27b0', addedAt: Date.Now() - 600000 },
@@ -810,8 +834,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 스타일 취소 버튼 클릭 이벤트 추가
   document.getElementById('removeStyleBtn').addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      // 'removeFormat' 명령어를 사용하여 모든 서식(굵게, 기울임, 색상 등)을 제거합니다.
-      applyStyle('removeFormat');
+    e.preventDefault();
+    // 'removeFormat' 명령어를 사용하여 모든 서식(굵게, 기울임, 색상 등)을 제거합니다.
+    applyStyle('removeFormat');
   });
 });
