@@ -10,6 +10,8 @@ let sortOrder = 'desc'; // 'desc' for latest, 'asc' for oldest
 let currentSearchQuery = '';
 let currentTagFilter = null; // 현재 선택된 태그 필터
 let isAllCollapsed = false; // 전체 접기/펼치기 상태
+let currentModalImages = []; // 모달에 표시될 이미지 배열
+let currentImageIndex = 0; // 현재 표시 중인 이미지의 인덱스
 
 // 각 비디오 그룹별 정렬 상태를 저장하는 전역 객체
 const videoSortState = {};
@@ -401,10 +403,10 @@ function renderBookmarks() {
               attachmentImg.src = att;
               attachmentImg.alt = '첨부파일';
               attachmentImg.addEventListener('click', () => {
-                  const modal = document.getElementById('imageModal');
-                  const modalImg = document.getElementById('modalImage');
-                  modal.style.display = 'flex';
-                  modalImg.src = att;
+                  // 모달 열기 및 이미지 배열, 인덱스 설정
+                  currentModalImages = attachments;
+                  currentImageIndex = index;
+                  updateModalImage();
               });
               attachmentWrapper.appendChild(attachmentImg);
 
@@ -600,8 +602,8 @@ function refresh() {
     });
   } else {
     bookmarksData = [
-      { id: '1', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 43, timeLabel: '0:43', note: '테스트 메모1', subtitle: 'Never Gonna Give You Up', tags: ['music', 'rickroll'], color: '#ff5722', addedAt: Date.now() - 3600000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=']},
-      { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll'], color: '#2196f3', addedAt: Date.now() - 1800000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=']},
+      { id: '1', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 43, timeLabel: '0:43', note: '테스트 메모1', subtitle: 'Never Gonna Give You Up', tags: ['music', 'rickroll'], color: '#ff5722', addedAt: Date.now() - 3600000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQICAgICAgICAgICAwMDAwMDAwMDBAQEBAQEBAgEBBAQEBgYGBgYGBgUFBQUFBgYGBgYGBgYGBgYGBgYGBj/wAALCAABAAEBAREA/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/2gAIAQEAAD8Akwz8d4p0yK/3s0cAAAAASUVORK5CYII=']},
+      { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll'], color: '#2196f3', addedAt: Date.now() - 1800000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=']},
       { id: '3', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 60, timeLabel: '1:00', note: '메모3', subtitle: 'Third part of the video', tags: ['history', 'old'], color: '#4caf50', addedAt: Date.now() - 900000 },
       { id: '4', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 180, timeLabel: '3:00', note: '메모4', subtitle: 'End of the song', tags: ['history', 'old'], color: '#9c27b0', addedAt: Date.Now() - 600000 },
       { id: '5', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 240, timeLabel: '4:00', note: '메모5', subtitle: 'Last bookmark', tags: ['history', 'old'], color: '#009688', addedAt: Date.now() - 300000, imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
@@ -609,6 +611,25 @@ function refresh() {
     renderTags(); // 태그 목록 렌더링
     renderBookmarks();
   }
+}
+
+// 모달 이미지 업데이트 함수
+function updateModalImage() {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const counter = document.getElementById('modalImageCounter');
+
+    if (currentModalImages.length > 0) {
+        modalImg.src = currentModalImages[currentImageIndex];
+        counter.textContent = `${currentImageIndex + 1} / ${currentModalImages.length}`;
+        prevBtn.disabled = currentImageIndex === 0;
+        nextBtn.disabled = currentImageIndex === currentModalImages.length - 1;
+        modal.style.display = 'flex';
+    } else {
+        modal.style.display = 'none';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -654,12 +675,45 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeModal = document.getElementsByClassName('close')[0];
   closeModal.onclick = () => { 
     modal.style.display = 'none';
+    currentModalImages = [];
+    currentImageIndex = 0;
   };
   window.onclick = (event) => {
     if (event.target == modal) {
       modal.style.display = 'none';
+      currentModalImages = [];
+      currentImageIndex = 0;
     }
   };
+
+  // 모달 내비게이션 버튼 이벤트 리스너 추가
+  document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentImageIndex > 0) {
+          currentImageIndex--;
+          updateModalImage();
+      }
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+      if (currentImageIndex < currentModalImages.length - 1) {
+          currentImageIndex++;
+          updateModalImage();
+      }
+  });
+  
+  // 키보드 이벤트 리스너 추가
+  document.addEventListener('keydown', (e) => {
+    // 모달이 열려 있을 때만 동작
+    const modal = document.getElementById('imageModal');
+    if (modal.style.display === 'flex') {
+        if (e.key === 'ArrowLeft') {
+            document.getElementById('prevBtn').click();
+        } else if (e.key === 'ArrowRight') {
+            document.getElementById('nextBtn').click();
+        }
+    }
+  });
+
 
   // 텍스트 선택 시 메뉴 표시 및 기능
   const textStyleMenu = document.getElementById('text-style-menu');
