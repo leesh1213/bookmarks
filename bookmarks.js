@@ -136,8 +136,11 @@ function renderBookmarks() {
           videoId: videoId,
           title: title,
           bookmarks: [],
-          tags: bm.tags || []
+          tags: new Set()
         };
+      }
+      if (bm.tags) {
+        bm.tags.forEach(tag => groupedBookmarks[videoId].tags.add(tag));
       }
       groupedBookmarks[videoId].bookmarks.push(bm);
     });
@@ -195,7 +198,7 @@ function renderBookmarks() {
     tagsInput.placeholder = '태그 입력 (쉼표 구분)';
     tagsInput.className = 'tags-input';
     // 비디오 그룹의 tags 속성을 사용하도록 수정
-    tagsInput.value = group.tags ? group.tags.join(', ') : '';
+    tagsInput.value = Array.from(group.tags).join(', ');
     
     // 태그 입력 완료시 (Enter) 또는 포커스 잃을 때 저장
     const saveTags = (inputElement) => {
@@ -627,7 +630,7 @@ function refresh() {
   } else {
     bookmarksData = [
       { id: '1', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 43, timeLabel: '0:43', note: '테스트 메모1', subtitle: 'Never Gonna Give You Up', tags: ['music', 'rickroll'], color: '#ff5722', addedAt: Date.now() - 3600000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQICAgICAgICAgICAwMDAwMDAwMDBAQEBAQEBAgEBBAQEBgYGBgYGBgUFBQUFBgYGBgYGBgYGBgYGBgYGBgYGBj/wAALCAABAAEBAREA/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/2gAIAQEAAD8Akwz8d4p0yK/3s0cAAAAASUVORK5CYII=']},
-      { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll'], color: '#2196f3', addedAt: Date.now() - 1800000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=']},
+      { id: '2', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 120, timeLabel: '2:00', note: '다른 메모2\n(줄바꿈 테스트)', subtitle: 'A different part of the song', tags: ['music', 'rickroll', 'test'], color: '#2196f3', addedAt: Date.now() - 1800000, attachments: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=']},
       { id: '3', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 60, timeLabel: '1:00', note: '메모3', subtitle: 'Third part of the video', tags: ['history', 'old'], color: '#4caf50', addedAt: Date.now() - 900000 },
       { id: '4', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 180, timeLabel: '3:00', note: '메모4', subtitle: 'End of the song', tags: ['history', 'old'], color: '#9c27b0', addedAt: Date.Now() - 600000 },
       { id: '5', videoId: 'dQw4w9WgXcQ', videoTitle: 'Rick Astley - Never Gonna Give You Up (Official Video)', time: 240, timeLabel: '4:00', note: '메모5', subtitle: 'Last bookmark', tags: ['history', 'old'], color: '#009688', addedAt: Date.now() - 300000, imageData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
@@ -734,6 +737,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('prevBtn').click();
         } else if (e.key === 'ArrowRight') {
             document.getElementById('nextBtn').click();
+        } else if (e.key === 'Escape') {
+            // ESC 키를 누르면 모달 닫기
+            modal.style.display = 'none';
+            currentModalImages = [];
+            currentImageIndex = 0;
         }
     }
   });
