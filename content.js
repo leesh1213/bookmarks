@@ -1,5 +1,8 @@
 // content.js - capture YouTube bookmarks and send to background (IndexedDB lives in background)
 (function () {
+  let currentVideoId = null; // A new variable to store the currently tracked video ID
+  let videoTimeUpdateHandler = null; // A new variable to hold the reference to the event listener function
+
   // Helpers
   function formatTime(seconds) {
     const m = Math.floor(seconds / 60);
@@ -164,7 +167,10 @@
   //북마크 마커를 타임라인에 추가하는 함수
   function addBookmarkMarkers() {
     const videoId = getVideoId();
-    if (!videoId) return;
+    if (!videoId) {
+      currentVideoId = null;
+      return;
+    }
 
     // 기존 마커를 모두 제거합니다.
     document
@@ -230,18 +236,24 @@
             });
           }
 
-          // 비디오 재생 중 북마크 지점 알림
-          let currentVideoBookmarks = res.data.map((b) => b.time); // 북마크 시간만 배열에 저장
-          let lastShownTime = null;
-          let prevTime = 0; // 이전 재생 위치 저장
+          // **수정된 부분: 기존 이벤트 리스너 제거 및 새로운 리스너 추가**
+          if (currentVideoId !== videoId) {
+            // Check if the video has changed
+            // Remove the old listener if it exists
+            const oldVideo = document.querySelector("video");
+            if (oldVideo && videoTimeUpdateHandler) {
+              oldVideo.removeEventListener("timeupdate", videoTimeUpdateHandler);
+            }
 
-          console.log(currentVideoBookmarks);
+            // Create a new handler for the new video
+            let lastShownTime = null;
+            let prevTime = 0;
+            const currentVideoBookmarks = res.data.map((b) => b.time);
 
-          if (video) {
-            video.ontimeupdate = function () {
+            videoTimeUpdateHandler = function () {
               const currentTime = Math.floor(video.currentTime);
 
-              // 재생 방향 체크: 뒤로 가거나 앞으로 건너뛴 경우 lastShownTime 초기화
+              // Check playback direction
               if (currentTime < prevTime) {
                 lastShownTime = null;
               }
@@ -252,9 +264,6 @@
                   const bookmark = res.data.find((b) => b.time === currentTime);
 
                   if (bookmark) {
-                    //showToast(`북마크 지점: ${bookmark.note || bookmark.timeLabel}`);
-
-                    // 토스트 메시지에 색상 표시 추가
                     showToast(
                       `<div style="display: flex; align-items: center; justify-content: center;">
                        <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${
@@ -269,14 +278,21 @@
                        }</span>
                    </div>`
                     );
-
-                    // 한 번만 표시되도록 배열에서 제거
-                    //currentVideoBookmarks = currentVideoBookmarks.filter(t => t !== currentTime);
                     lastShownTime = currentTime;
                   }
                 }
               }
             };
+
+            video.addEventListener("timeupdate", videoTimeUpdateHandler);
+            currentVideoId = videoId; // Update the tracked video ID
+          }
+        } else {
+          // If there are no bookmarks, ensure any old listener is removed
+          const video = document.querySelector("video");
+          if (video && videoTimeUpdateHandler) {
+            video.removeEventListener("timeupdate", videoTimeUpdateHandler);
+            videoTimeUpdateHandler = null;
           }
         }
       }
